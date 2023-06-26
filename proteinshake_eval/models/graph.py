@@ -5,6 +5,8 @@ import torch_geometric.nn as gnn
 from torch_geometric import utils
 from ..position_encoder import build_position_encoding
 
+from motifiesta.models import MotiFiestaModel
+
 
 class GINConv(gnn.MessagePassing):
     def __init__(self, embed_dim=256, use_edge_attr=False):
@@ -178,3 +180,12 @@ class GNN_encoder(nn.Module):
 
     def from_pretrained(self, model_path):
         self.encoder.load_state_dict(torch.load(model_path)['state_dict'])
+
+class MotiFiesta_encoder(nn.Module):
+    def __init__(self, global_pool=None):
+        self.encoder = MotiFiestaModel()
+        self.global_pool = global_pool
+
+    def forward(self, data):
+        pass
+

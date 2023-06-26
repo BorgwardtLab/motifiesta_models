@@ -2,10 +2,7 @@ import torch
 from torch import nn
 from .aggregator import Aggregator
 from .graph import GNN_encoder
-from .point import PointNet_encoder
-from .point2 import PointNetPlusPlus_encoder
-from .voxel import VoxelNet_encoder
-
+from motifiesta.models import MotiFiestaModel
 
 NUM_PROTEINS = 20
 
@@ -20,24 +17,8 @@ def build_encoder(cfg):
             cfg.pe,
             cfg.pooling,
         )
-    elif cfg.name == 'point_net':
-        # return PointNet_encoder(
-        #     cfg.embed_dim,
-        #     cfg.pooling,
-        #     cfg.alpha
-        # )
-        return PointNetPlusPlus_encoder(
-            cfg.embed_dim,
-            cfg.pooling
-        )
-    elif cfg.name == 'voxel_net':
-        return VoxelNet_encoder(
-            cfg.embed_dim,
-            cfg.num_layers,
-            cfg.kernel_size,
-            cfg.dropout,
-            cfg.pooling,
-        )
+    elif cfg.name == 'motif':
+        return MotiFiesta_encoder()
     else:
         raise ValueError("Not implemented!")
 
