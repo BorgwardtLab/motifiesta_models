@@ -1,0 +1,8 @@
+proteinshake
+torch
+torch_sparse
+torch_scatter
+torch_geometric
+hydra-core
+pytorch-lightning
+-e ../MotiFiesta_pip
