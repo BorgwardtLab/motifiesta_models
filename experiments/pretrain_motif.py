@@ -77,7 +77,7 @@ class MotifTrainer(pl.LightningModule):
                              batch_neg.batch
                             )
 
-        if self.rec_loss == 'full':
+        if cfg.rec_loss == 'full':
             l_r = rec_loss(steps=self.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
@@ -90,7 +90,7 @@ class MotifTrainer(pl.LightningModule):
                            simfunc=self.simfunc
                            )
 
-        if self.rec_loss == 'margin':
+        if cfg.rec_loss == 'margin':
             l_r = margin_loss(steps=self.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
@@ -98,32 +98,32 @@ class MotifTrainer(pl.LightningModule):
                            batch=batch.batch,
                            node_feats=self.model.node_embed(batch.x),
                            internals=out_pos['internals'],
-                           epsilon=self.epsilon,
-                           num_nodes=self.rec_samples,
+                           epsilon=cfg.epsilon,
+                           num_nodes=cfg.rec_samples,
                            device=self.device_,
-                           simfunc=self.simfunc
+                           simfunc=cfg.simfunc
                            )
 
 
         l_m, l_s = 0, 0
-        if epoch > self.rec_epochs:
-            if self.freq_loss == 'concentration':
+        if epoch > cfg.rec_epochs:
+            if cfg.freq_loss == 'concentration':
                 l_m = freq_loss(out_pos['internals'],
                                 out_neg['internals'],
                                 out_pos['e_prob'],
                                 steps=self.steps,
                                 k=self.num_neighbors,
                                 estimator=self.estimator,
-                                beta=self.beta,
-                                lam=self.lam_sigma,
-                                volume=self.volume,
+                                beta=cfg.beta,
+                                lam=cfg.lam_sigma,
+                                volume=cfg.volume,
                                 device=self.device_
                                 )
-            elif self.freq_loss == 'theta':
+            elif cfg.freq_loss == 'theta':
                 l_m  = theta_loss(out_pos['internals'],
                                   out_pos['e_prob'],
-                                  theta=self.theta,
-                                  epsilon=self.epsilon
+                                  theta=cfg.theta,
+                                  epsilon=cfg.epsilon
                                   )
             else:
                 print("INVALID LOSS CHOICE")

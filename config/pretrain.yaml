@@ -3,7 +3,7 @@ defaults:
   - task: alphafold
   - representation: graph
   - model: ${representation}
-  - training: pretrain
+  - training: motif 
   - paths: default
   - optional best_model: ${task}_${representation}
   - pretrain: default
