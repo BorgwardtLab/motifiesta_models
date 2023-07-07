@@ -1,0 +1,13 @@
+numpy
+scipy
+scikit-learn
+proteinshake
+rnaglib
+torch
+torch_scatter
+torch_sparse
+torch_geometric
+hydra-core
+-e ../MotiFiesta_pip
+-e .
+
