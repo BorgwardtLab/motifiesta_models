@@ -27,7 +27,6 @@ from motifiesta.losses import rec_loss
 from motifiesta.losses import margin_loss
 from motifiesta.losses import theta_loss
 from motifiesta.utils import to_graphs
-from motifiesta.utils import assign_index 
 from motifiesta.models import MotiFiestaModel
 from motifiesta.datasets import MotiFiestaData 
 
@@ -77,58 +76,28 @@ class MotifTrainer(pl.LightningModule):
                              batch_neg.batch
                             )
 
-        if cfg.rec_loss == 'full':
-            l_r = rec_loss(steps=self.steps,
-                           ee=out_pos['e_ind'],
-                           spotlights=out_pos['merge_info']['spotlights'],
-                           graphs=graphs_pos,
-                           batch=batch.batch,
-                           node_feats=self.model.node_embed(batch.x),
-                           internals=out_pos['internals'],
-                           num_nodes=self.rec_samples,
-                           device=self.device_,
-                           simfunc=self.simfunc
-                           )
-
-        if cfg.rec_loss == 'margin':
-            l_r = margin_loss(steps=self.steps,
-                           ee=out_pos['e_ind'],
-                           spotlights=out_pos['merge_info']['spotlights'],
-                           graphs=graphs_pos,
-                           batch=batch.batch,
-                           node_feats=self.model.node_embed(batch.x),
-                           internals=out_pos['internals'],
-                           epsilon=cfg.epsilon,
-                           num_nodes=cfg.rec_samples,
-                           device=self.device_,
-                           simfunc=cfg.simfunc
-                           )
-
+        l_r = rec_loss(steps=cfg.steps,
+                       ee=out_pos['e_ind'],
+                       spotlights=out_pos['merge_info']['spotlights'],
+                       graphs=graphs_pos,
+                       batch=batch.batch,
+                       node_feats=self.model.node_embed(batch.x),
+                       internals=out_pos['internals'],
+                       num_nodes=cfg.rec_samples,
+                       device=self.device_,
+                       simfunc=self.simfunc
+                       )
 
         l_m, l_s = 0, 0
-        if epoch > cfg.rec_epochs:
-            if cfg.freq_loss == 'concentration':
-                l_m = freq_loss(out_pos['internals'],
-                                out_neg['internals'],
-                                out_pos['e_prob'],
-                                steps=self.steps,
-                                k=self.num_neighbors,
-                                estimator=self.estimator,
-                                beta=cfg.beta,
-                                lam=cfg.lam_sigma,
-                                volume=cfg.volume,
-                                device=self.device_
-                                )
-            elif cfg.freq_loss == 'theta':
-                l_m  = theta_loss(out_pos['internals'],
-                                  out_pos['e_prob'],
-                                  theta=cfg.theta,
-                                  epsilon=cfg.epsilon
-                                  )
-            else:
-                print("INVALID LOSS CHOICE")
-                raise ValueError
-
+        if epoch > self.cfg.rec_epochs:
+            l_m = freq_loss(out_pos['internals'],
+                            out_neg['internals'],
+                            out_pos['e_prob'],
+                            steps=self.cfg.steps,
+                            beta=self.cfg.beta,
+                            lam=self.cfg.lam_sigma,
+                            device=self.device_
+                            )
         l_m *= self.lam_mot
         l_r *= self.lam_rec
 

@@ -7,15 +7,18 @@ batch_size: 100
 warmup: 10
 num_workers: 4
 
+steps: 10
 rewire_iters: 100
 rec_loss: "full" 
+rec_epochs: 1
+freq_loss: "concentration"  
 lam_mot: 1.0
 lam_sup: 1.0    
 lam_sigma: 1.0
-rec_epochs: 20
 rec_samples: 20
 epsilon: 0.2
 theta: 0.1
 volume: false
 beta: 1.0
-simfunc: 'wwl'
+simfunc: "wwl"
+estimator: "random"

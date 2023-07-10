@@ -10,7 +10,7 @@ defaults:
 
 seed: 0
 pretrained: false
-pretrain-strategy: masking
+pretrain-strategy: "mask"
 pretrained_path: pretrained/${pretrain-strategy}/model.pt
 
 # output directory, generated dynamically on each run
