@@ -66,6 +66,7 @@ class MotifTrainer(pl.LightningModule):
         graphs_pos = to_graphs(batch)
         graphs_neg = to_graphs(batch_neg)
 
+        print("forward")
         out_pos = self.model(batch.x,
                              batch.edge_index,
                              batch.batch
@@ -76,6 +77,7 @@ class MotifTrainer(pl.LightningModule):
                              batch_neg.batch
                             )
 
+        print("loss")
         l_r = rec_loss(steps=self.cfg.training.steps,
                        ee=out_pos['e_ind'],
                        spotlights=out_pos['merge_info']['spotlights'],
@@ -84,8 +86,8 @@ class MotifTrainer(pl.LightningModule):
                        node_feats=self.model.node_embed(batch.x),
                        internals=out_pos['internals'],
                        num_nodes=self.cfg.training.rec_samples,
-                       device=self.device_,
-                       simfunc=self.cfg.training.simfunc
+                       simfunc=self.cfg.training.simfunc,
+                       device=self.device
                        )
 
         l_m, l_s = 0, 0
@@ -96,7 +98,6 @@ class MotifTrainer(pl.LightningModule):
                             steps=self.cfg.training.steps,
                             beta=self.cfg.training.beta,
                             lam=self.cfg.training.lam_sigma,
-                            device=self.device_
                             )
         l_m *= self.training.lam_mot
         l_r *= self.training.lam_rec
