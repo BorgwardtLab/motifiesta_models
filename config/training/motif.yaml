@@ -7,7 +7,7 @@ batch_size: 3
 warmup: 10
 num_workers: 4
 
-steps: 10
+steps: 3 
 rewire_iters: 100
 rec_loss: "full" 
 rec_epochs: 1
