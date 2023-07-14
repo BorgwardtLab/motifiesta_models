@@ -81,7 +81,6 @@ class MotifTrainer(pl.LightningModule):
                              batch_neg.batch
                             )
 
-        """
         print("loss")
         start = time.time()
         l_r = rec_loss(steps=self.cfg.training.steps,
@@ -93,10 +92,10 @@ class MotifTrainer(pl.LightningModule):
                        internals=out_pos['internals'],
                        num_nodes=self.cfg.training.rec_samples,
                        simfunc=self.cfg.training.simfunc,
-                       device=self.device
+                       device=self.device,
+                       do_cache=True
                        )
         rec_time = time.time() - start
-        """
 
         l_m, l_s = 0, 0
         # if epoch > self.cfg.training.rec_epochs:
