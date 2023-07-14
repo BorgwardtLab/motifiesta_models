@@ -50,6 +50,19 @@ class MotifTrainer(pl.LightningModule):
 
         return loss
 
+    def switch_grads(self, mode='rec'):
+        for name, param in self.model.named_parameters():
+            if mode == 'rec':
+                if 'scorer' in name or 'embed' in name:
+                    param.requires_grad = False
+                if 'encoder' in name:
+                    param.requires_grad = True
+            if mode == 'freq':
+                if 'scorer' in name or 'embed' in name:
+                    param.requires_grad = True
+                if 'encoder' in name:
+                    param.requires_grad = False
+
     def _shared_eval_step(self, batch, batch_idx, epoch):
         """
 
@@ -68,7 +81,7 @@ class MotifTrainer(pl.LightningModule):
         graphs_pos = to_graphs(batch)
         graphs_neg = to_graphs(batch_neg)
 
-        print("forward")
+        #print("forward")
         start = time.time()
         out_pos = self.model(batch.x,
                              batch.edge_index,
@@ -81,25 +94,28 @@ class MotifTrainer(pl.LightningModule):
                              batch_neg.batch
                             )
 
-        print("loss")
+        #print("loss")
         start = time.time()
-        l_r = rec_loss(steps=self.cfg.training.steps,
-                       ee=out_pos['e_ind'],
-                       spotlights=out_pos['merge_info']['spotlights'],
-                       graphs=graphs_pos,
-                       batch=batch.batch,
-                       node_feats=self.model.node_embed(batch.x),
-                       internals=out_pos['internals'],
-                       num_nodes=self.cfg.training.rec_samples,
-                       simfunc=self.cfg.training.simfunc,
-                       device=self.device,
-                       do_cache=True
-                       )
-        rec_time = time.time() - start
+        l_r = 0
+        loss = 0
+        if not epoch % self.cfg.training.rec_epochs:
+            self.switch_grads(mode='rec')
+            l_r = rec_loss(steps=self.cfg.training.steps,
+                           ee=out_pos['e_ind'],
+                           spotlights=out_pos['merge_info']['spotlights'],
+                           graphs=graphs_pos,
+                           batch=batch.batch,
+                           node_feats=self.model.node_embed(batch.x),
+                           internals=out_pos['internals'],
+                           num_nodes=self.cfg.training.rec_samples,
+                           simfunc=self.cfg.training.simfunc,
+                           device=self.device,
+                           do_cache=True
+                           )
+            loss += l_r
 
-        l_m, l_s = 0, 0
-        # if epoch > self.cfg.training.rec_epochs:
-        if True:
+        else: 
+            self.switch_grads(mode='freq')
             start = time.time()
             l_m = freq_loss(out_pos['internals'],
                             out_neg['internals'],
@@ -110,11 +126,8 @@ class MotifTrainer(pl.LightningModule):
                             estimator=self.cfg.training.estimator
                             )
             freq_time = time.time() - start
-        l_m *= self.cfg.training.lam_mot
-        l_r *= self.cfg.training.lam_rec
-        loss =  l_m + l_r
-        print(loss)
-        print(f"forward time: {forward_time}, rec_time: {rec_time}, freq time: {freq_time}")
+            loss += l_m
+        # print(f"forward time: {forward_time}, rec_time: {rec_time}, freq time: {freq_time}")
         return loss
 
     def configure_optimizers(self):
