@@ -38,8 +38,7 @@ def main(cfg: DictConfig) -> None:
 
     # dset = datasets.AlphaFoldDataset(root=cfg.task.path, organism=cfg.task.organism)
     dset = datasets.RCSBDataset(root=cfg.task.path)
-
-    dset = get_pretrain_dataset(cfg.representation, dset)
+    dset = get_pretrain_dataset(cfg, dset)
     dset = assign_index(dset)
 
     data_loader = DataLoader(
@@ -53,6 +52,8 @@ def main(cfg: DictConfig) -> None:
         model = MotifTrainer(net, cfg)
     elif cfg.training.strategy == 'mask':
         model = MaskTrainer(net, cfg)
+
+    print(dset[0])
 
     logger = pl.loggers.CSVLogger(cfg.paths.output_dir, name='csv_logs')
     callbacks = [
