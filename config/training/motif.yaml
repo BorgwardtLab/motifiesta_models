@@ -16,10 +16,11 @@ lam_mot: 1.0
 lam_rec: 1.0
 lam_sup: 1.0    
 lam_sigma: 1.0
-rec_samples: 20
+rec_samples: 10
 epsilon: 0.2
 theta: 0.1
 volume: false
 beta: 1.0
 simfunc: "ged"
 estimator: "random"
+ged_cache: true 

@@ -91,6 +91,7 @@ class MotifTrainer(pl.LightningModule):
 					   internals=out_pos['internals'],
 					   num_nodes=self.cfg.training.rec_samples,
 					   simfunc=self.cfg.training.simfunc,
+                       do_cache=self.cfg.training.ged_cache,
 					   device=self.device
 					   )
 		rec_time = time.time() - start
