@@ -7,4 +7,4 @@ pooling: mean
 pe: null
 out_head: linear
 aggregation: dot
-use_edge_attr: false
+use_edge_attr: true 

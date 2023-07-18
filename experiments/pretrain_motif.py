@@ -42,7 +42,10 @@ log = logging.getLogger(__name__)
 class MotifTrainer(pl.LightningModule):
     def __init__(self, model, cfg):
         super().__init__()
-        self.model = MotiFiestaModel(steps=cfg.training.steps) 
+        self.model = MotiFiestaModel(steps=cfg.training.steps,
+                                     use_edge_attr=True,
+                                     n_edge_features=cfg.task.num_edge_features
+                                     ) 
         self.cfg = cfg
 
     def training_step(self, batch, batch_idx):

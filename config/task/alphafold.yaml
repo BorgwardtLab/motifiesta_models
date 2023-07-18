@@ -1,3 +1,4 @@
 name: alphafold
 organism: swissprot
 path: ${paths.data_dir}/alphafold/${task.organism}
+num_edge_features: 1
