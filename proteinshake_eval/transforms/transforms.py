@@ -1,4 +1,4 @@
-from .graph import GraphTrainTransform, GraphPairTrainTransform
+from .graph import GraphTrainTransform, GraphPairTrainTransform, ProteinEdgeTypeTransform
 from .point2 import PointTrainTransform, PointPairTrainTransform
 from .voxel import VoxelTrainTransform, VoxelPairTrainTransform
 from .utils import PPIDataset
@@ -42,13 +42,14 @@ def get_transformed_dataset(cfg, dataset, task, y_transform=None):
         raise ValueError("Not implemented!")
 
 def get_pretrain_dataset(cfg, dataset):
-    if cfg.representation.name == 'graph':
+    if cfg.task.name in ['alphafold', 'rcsb']: 
         if cfg.training.strategy == 'mask':
             data_transform = Compose([
-                GraphPretrainTransform(), MaskNode(20, mask_rate=cfg.representation.mask_rate)
+                GraphPretrainTransform(), ProteinEdgeTypeTransform(), MaskNode(20, mask_rate=cfg.representation.mask_rate)
             ])
         if cfg.training.strategy == 'motif':
-            data_transform = GraphPretrainTransform()
+            data_transform = Compose([GraphPretrainTransform(), ProteinEdgeTypeTransform()])
+
         return dataset.to_graph(eps=cfg.representation.graph_eps).pyg(transform=data_transform)
     else:
-        raise ValueError("Not implemented!")
+        raise ValueError("Dataset Not Implemented.")
