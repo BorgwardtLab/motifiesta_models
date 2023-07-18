@@ -58,3 +58,28 @@ class GraphPairTrainTransform(object):
         new_data.edge_index = data.edge_index
         new_data.edge_attr = data.edge_attr
         return new_data
+
+class ProteinEdgeAttributeTransform(object):
+    """ Remove back-edges so that we have a single N->C backbone direction.
+    Add an attribute for backbone vs contact edges """
+    def __call__(self, data):
+        # directed backbone
+        keep_einds, backbone_inds = [], []
+        for i, (u, v) in enumerate(data.edge_index):
+            # consecutive edges are backbone
+            if u == (v - 1):
+                backbone_inds.append(i)
+                keep_einds.append(i)
+            elif u == (v + 1):
+                continue
+            else:
+                keep_einds.append(i)
+
+        edge_attr = torch.zeros(edge_index.shape[1], 1)
+        edge_attr[backbone_inds] = 1.
+
+        data.edge_attr = edge_attr[keep_einds]
+        data.edge_index = data.edge_index[keep_einds]
+        pass
+    pass
+
