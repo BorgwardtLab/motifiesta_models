@@ -49,6 +49,7 @@ class MotifTrainer(pl.LightningModule):
         self.cfg = cfg
 
     def training_step(self, batch, batch_idx):
+        print("Getting loss")
         loss = self._shared_eval_step(batch, batch_idx, self.current_epoch)
 
         return loss
@@ -79,19 +80,22 @@ class MotifTrainer(pl.LightningModule):
 
         rewire_transform = RewireTransform(n_iter=self.cfg.training.rewire_iters)
 
+        start = time.time()
         batch_neg = rewire_transform(batch)
 
+        start = time.time()
         graphs_pos = to_graphs(batch)
         graphs_neg = to_graphs(batch_neg)
 
         #print("forward")
         start = time.time()
+
         out_pos = self.model(batch.x,
                              batch.edge_index,
                              batch.batch
                             )
-        forward_time = time.time() - start
 
+            
         out_neg = self.model(batch_neg.x,
                              batch_neg.edge_index,
                              batch_neg.batch
