@@ -92,13 +92,15 @@ class MotifTrainer(pl.LightningModule):
 
         out_pos = self.model(batch.x,
                              batch.edge_index,
-                             batch.batch
+                             batch.batch,
+                             edge_attr=batch.edge_attr
                             )
 
             
         out_neg = self.model(batch_neg.x,
                              batch_neg.edge_index,
-                             batch_neg.batch
+                             batch_neg.batch,
+                             edge_attr=batch_neg.edge_attr
                             )
 
         #print("loss")
