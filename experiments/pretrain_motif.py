@@ -29,6 +29,7 @@ from motifiesta.losses import rec_loss
 from motifiesta.losses import margin_loss
 from motifiesta.losses import theta_loss
 from motifiesta.utils import to_graphs
+from motifiesta.utils import assign_index 
 from motifiesta.models import MotiFiestaModel
 from motifiesta.datasets import MotiFiestaData 
 
@@ -49,7 +50,7 @@ class MotifTrainer(pl.LightningModule):
         self.cfg = cfg
 
     def training_step(self, batch, batch_idx):
-        print("Getting loss")
+        # print("Getting loss")
         loss = self._shared_eval_step(batch, batch_idx, self.current_epoch)
 
         return loss
@@ -78,6 +79,7 @@ class MotifTrainer(pl.LightningModule):
 
         """
 
+        print(batch_idx)
         rewire_transform = RewireTransform(n_iter=self.cfg.training.rewire_iters)
 
         start = time.time()
