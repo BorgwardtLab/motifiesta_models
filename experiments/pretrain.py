@@ -66,8 +66,8 @@ def main(cfg: DictConfig) -> None:
     trainer = pl.Trainer(
         limit_train_batches=limit_train_batches,
         max_epochs=cfg.training.epochs,
-        # devices='auto',
-        accelerator='mps',
+        devices='auto',
+        accelerator='auto',
         enable_checkpointing=False,
         logger=[logger],
         callbacks=callbacks
