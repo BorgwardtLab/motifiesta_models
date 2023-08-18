@@ -1,0 +1,4 @@
+name: motifiesta 
+steps: 3
+embed_dim: 256
+use_edge_attr: true 
