@@ -37,15 +37,17 @@ def main(cfg: DictConfig) -> None:
     pl.seed_everything(cfg.seed, workers=True)
 
     # dset = datasets.AlphaFoldDataset(root=cfg.task.path, organism=cfg.task.organism)
+    print("Loading data")
     dset = datasets.RCSBDataset(root=cfg.task.path)
+    print("Converting..")
     dset = get_pretrain_dataset(cfg, dset)
-    dset = assign_index(dset)
 
     data_loader = DataLoader(
         dset, batch_size=cfg.training.batch_size, shuffle=False,
         num_workers=cfg.training.num_workers
     )
 
+    print("model init")
     net = ProteinStructureEncoder(cfg.model)
 
     if cfg.training.strategy == 'motif':

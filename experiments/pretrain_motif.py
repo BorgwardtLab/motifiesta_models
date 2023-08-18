@@ -28,7 +28,6 @@ from motifiesta.losses import freq_loss
 from motifiesta.losses import rec_loss
 from motifiesta.losses import margin_loss
 from motifiesta.losses import theta_loss
-from motifiesta.utils import to_graphs
 from motifiesta.utils import assign_index 
 from motifiesta.models import MotiFiestaModel
 from motifiesta.datasets import MotiFiestaData 
@@ -83,17 +82,11 @@ class MotifTrainer(pl.LightningModule):
         start = time.time()
         batch_neg = rewire_transform(batch)
 
-        start = time.time()
-        print("to graphs")
-        graphs_pos = to_graphs(batch)
-        graphs_neg = to_graphs(batch_neg)
-
         #print("forward")
         start = time.time()
 
         print("forward pos")
         out_pos = self.model(batch)
-
             
         print("forward neg")
         out_neg = self.model(batch_neg)
@@ -108,7 +101,6 @@ class MotifTrainer(pl.LightningModule):
             l_r = rec_loss(steps=self.cfg.training.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
-                           graphs=graphs_pos,
                            batch=batch.batch,
                            node_feats=self.model.node_embed(batch.x),
                            internals=out_pos['internals'],
@@ -156,7 +148,6 @@ def main(cfg: DictConfig) -> None:
     dset = datasets.RCSBDataset(root=cfg.task.path)
 
     dset = get_pretrain_dataset(cfg, dset)
-    dset = assign_index(dset)
 
     data_loader = DataLoader(
         dset, batch_size=cfg.training.batch_size, shuffle=False,
