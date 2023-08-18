@@ -2,4 +2,4 @@
 data_dir: data
 output_dir: ${hydra:runtime.output_dir}
 log_prefix: logs
-log_dir: ${paths.log_prefix}/${task.name}/${task.split}/${representation.name}/${training.strategy}/${seed}
+log_dir: ${paths.log_prefix}/${task.name}/${training.strategy}/${seed}

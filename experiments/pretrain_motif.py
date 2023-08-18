@@ -43,10 +43,7 @@ log = logging.getLogger(__name__)
 class MotifTrainer(pl.LightningModule):
     def __init__(self, model, cfg):
         super().__init__()
-        self.model = MotiFiestaModel(steps=cfg.training.steps,
-                                     use_edge_attr=True,
-                                     n_edge_features=cfg.task.num_edge_features
-                                     ) 
+        self.model = model 
         self.cfg = cfg
 
     def training_step(self, batch, batch_idx):
@@ -80,30 +77,26 @@ class MotifTrainer(pl.LightningModule):
         """
 
         print(batch_idx)
+        print("Rewire")
         rewire_transform = RewireTransform(n_iter=self.cfg.training.rewire_iters)
 
         start = time.time()
         batch_neg = rewire_transform(batch)
 
         start = time.time()
+        print("to graphs")
         graphs_pos = to_graphs(batch)
         graphs_neg = to_graphs(batch_neg)
 
         #print("forward")
         start = time.time()
 
-        out_pos = self.model(batch.x,
-                             batch.edge_index,
-                             batch.batch,
-                             edge_attr=batch.edge_attr
-                            )
+        print("forward pos")
+        out_pos = self.model(batch)
 
             
-        out_neg = self.model(batch_neg.x,
-                             batch_neg.edge_index,
-                             batch_neg.batch,
-                             edge_attr=batch_neg.edge_attr
-                            )
+        print("forward neg")
+        out_neg = self.model(batch_neg)
 
         #print("loss")
         start = time.time()
@@ -111,6 +104,7 @@ class MotifTrainer(pl.LightningModule):
         loss = 0
         if not epoch % self.cfg.training.rec_epochs:
             self.switch_grads(mode='rec')
+            print("rec loss")
             l_r = rec_loss(steps=self.cfg.training.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
@@ -128,6 +122,7 @@ class MotifTrainer(pl.LightningModule):
         else: 
             self.switch_grads(mode='freq')
             start = time.time()
+            print("freq loss")
             l_m = freq_loss(out_pos['internals'],
                             out_neg['internals'],
                             out_pos['e_prob'],

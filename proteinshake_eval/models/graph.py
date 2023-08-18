@@ -173,7 +173,7 @@ class GNN_encoder(nn.Module):
         output = self.encoder(data)
         if self.pooling is not None:
             output = self.pooling(output, data.batch)
-        return output
+        return {'x' : output}
 
     def from_pretrained(self, model_path):
         self.encoder.load_state_dict(torch.load(model_path)['state_dict'])

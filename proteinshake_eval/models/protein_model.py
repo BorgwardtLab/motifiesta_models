@@ -1,12 +1,14 @@
 import torch
 from torch import nn
+from motifiesta.models import MotiFiestaModel
 from .aggregator import Aggregator
 from .graph import GNN_encoder
-from motifiesta.models import MotiFiestaModel
 
 NUM_PROTEINS = 20
 
 def build_encoder(cfg):
+    print(cfg)
+    print("gnn")
     if cfg.name == 'gnn':
         return GNN_encoder(
             cfg.embed_dim,
@@ -17,8 +19,12 @@ def build_encoder(cfg):
             cfg.pe,
             cfg.pooling,
         )
-    elif cfg.name == 'motif':
-        return MotiFiesta_encoder()
+    elif cfg.name == 'motifiesta':
+        print("fiesta")
+        return MotiFiestaModel(steps=cfg.steps,
+                               use_edge_attr=True,
+                               ) 
+
     else:
         raise ValueError("Not implemented!")
 
@@ -78,7 +84,10 @@ class ProteinStructureEncoder(nn.Module):
 
     def forward(self, data):
         output = self.encoder(data)
-        return self.head(output[data.masked_indices])
+        if self.cfg.name == 'motifiesta':
+            return output
+        else: 
+            return self.head(output[data.masked_indices])
 
     def step(self, batch):
         y = batch.masked_label
@@ -117,13 +126,13 @@ class ProteinStructureNet(nn.Module):
         )
 
     def forward(self, data, other_data=None):
-        x = self.encoder(data)
+        x = self.encoder(data)['x']
         if hasattr(data, 'sub_index'):
             x = x[data.sub_index]
         other_x = other_data
         if self.encode_other_protein:
             assert other_data is not None, "other data should be provided"
-            other_x = self.encoder(other_data)
+            other_x = self.encoder(other_data)['x']
             if hasattr(other_data, 'sub_index'):
                 other_x = other_x[other_data.sub_index]
 
