@@ -98,11 +98,13 @@ class MotifTrainer(pl.LightningModule):
         if not epoch % self.cfg.training.rec_epochs:
             self.switch_grads(mode='rec')
             print("rec loss")
-            l_r = rec_loss(steps=self.cfg.training.steps,
+            l_r = rec_loss(steps=self.cfg.model.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
                            batch=batch.batch,
-                           node_feats=self.model.node_embed(batch.x),
+                           node_feats=batch.x,
+                           edge_index_base=batch.edge_index,
+                           edge_feats=batch.edge_attr,
                            internals=out_pos['internals'],
                            num_nodes=self.cfg.training.rec_samples,
                            simfunc=self.cfg.training.simfunc,
