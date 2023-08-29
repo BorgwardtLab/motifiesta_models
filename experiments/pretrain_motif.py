@@ -85,10 +85,8 @@ class MotifTrainer(pl.LightningModule):
         #print("forward")
         start = time.time()
 
-        print("forward pos")
         out_pos = self.model(batch)
             
-        print("forward neg")
         out_neg = self.model(batch_neg)
 
         #print("loss")
@@ -96,8 +94,7 @@ class MotifTrainer(pl.LightningModule):
         l_r = 0
         loss = 0
         if not epoch % self.cfg.training.rec_epochs:
-            self.switch_grads(mode='rec')
-            print("rec loss")
+            # self.switch_grads(mode='rec')
             l_r = rec_loss(steps=self.cfg.model.steps,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
@@ -113,14 +110,13 @@ class MotifTrainer(pl.LightningModule):
                            )
             loss += l_r
 
-        else: 
-            self.switch_grads(mode='freq')
+        if True: 
+            # self.switch_grads(mode='freq')
             start = time.time()
-            print("freq loss")
             l_m = freq_loss(out_pos['internals'],
                             out_neg['internals'],
                             out_pos['e_prob'],
-                            steps=self.cfg.training.steps,
+                            steps=self.cfg.model.steps,
                             beta=self.cfg.training.beta,
                             lam=self.cfg.training.lam_sigma,
                             estimator=self.cfg.training.estimator
