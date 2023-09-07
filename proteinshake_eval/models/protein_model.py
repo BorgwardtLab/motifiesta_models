@@ -7,26 +7,16 @@ from .graph import GNN_encoder
 NUM_PROTEINS = 20
 
 def build_encoder(cfg):
-    print(cfg)
-    print("gnn")
-    if cfg.name == 'gnn':
-        return GNN_encoder(
-            cfg.embed_dim,
-            cfg.num_layers,
-            cfg.dropout,
-            cfg.gnn_type,
-            cfg.use_edge_attr,
-            cfg.pe,
-            cfg.pooling,
-        )
-    elif cfg.name == 'motifiesta':
-        print("fiesta")
-        return MotiFiestaModel(steps=cfg.steps,
-                               use_edge_attr=True,
-                               ) 
-
-    else:
-        raise ValueError("Not implemented!")
+    return GNN_encoder(
+        cfg.embed_dim,
+        cfg.num_layers,
+        cfg.dropout,
+        cfg.gnn_type,
+        cfg.use_edge_attr,
+        cfg.pe,
+        cfg.pooling,
+        motif=cfg.name == 'motif'
+    )
 
 class TaskHead(nn.Module):
     def __init__(self, task, embed_dim=256, out_head='linear',
@@ -82,9 +72,9 @@ class ProteinStructureEncoder(nn.Module):
 
         self.head = nn.Linear(cfg.embed_dim, NUM_PROTEINS)
 
-    def forward(self, data):
-        output = self.encoder(data)
-        if self.cfg.name == 'motifiesta':
+    def forward(self, data, full_output=False):
+        output = self.encoder(data, full_output=full_output)
+        if self.cfg.name == 'motif':
             return output
         else: 
             return self.head(output[data.masked_indices])

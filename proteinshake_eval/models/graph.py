@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 import torch_geometric.nn as gnn
 from torch_geometric import utils
+from motifiesta.models import MotiFiestaModel
 from ..position_encoder import build_position_encoding
 
 class GINConv(gnn.MessagePassing):
@@ -143,7 +144,7 @@ class GNN(nn.Module):
             else:
                 output = F.dropout(F.relu(output), self.dropout, training=self.training)
 
-        return output
+        return {'x': output}
 
     def save(self, model_path, args):
         torch.save(
@@ -154,10 +155,13 @@ class GNN(nn.Module):
 
 class GNN_encoder(nn.Module):
     def __init__(self, embed_dim=256, num_layers=3, dropout=0.0, gnn_type='gin',
-                 use_edge_attr=False, pe=None, global_pool=None):
+                 use_edge_attr=False, pe=None, global_pool=None, motif=False):
         super().__init__()
 
-        self.encoder = GNN(embed_dim, num_layers, dropout, gnn_type, use_edge_attr, pe)
+        if motif:
+            self.encoder = MotiFiestaModel(steps=num_layers)
+        else:
+            self.encoder = GNN(embed_dim, num_layers, dropout, gnn_type, use_edge_attr, pe)
         self.global_pool = global_pool
         if global_pool == 'mean':
             self.pooling = gnn.global_mean_pool
@@ -168,12 +172,16 @@ class GNN_encoder(nn.Module):
         elif global_pool is None:
             self.pooling = None
 
-    def forward(self, data):
-        bsz = len(data.ptr) - 1
+    def forward(self, data, full_output=False):
         output = self.encoder(data)
         if self.pooling is not None:
-            output = self.pooling(output, data.batch)
-        return {'x' : output}
+            pooled = self.pooling(output['x'], data.batch)
+            output['x'] = pooled
+
+        if full_output:
+            return output
+        else:
+            return output['x']
 
     def from_pretrained(self, model_path):
         self.encoder.load_state_dict(torch.load(model_path)['state_dict'])

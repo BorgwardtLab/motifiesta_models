@@ -85,17 +85,19 @@ class MotifTrainer(pl.LightningModule):
         #print("forward")
         start = time.time()
 
-        out_pos = self.model(batch)
-            
-        out_neg = self.model(batch_neg)
+        out_pos = self.model(batch, full_output=True)
 
-        #print("loss")
+        print(f"full forward {time.time() - start}")
+            
+        out_neg = self.model(batch_neg, full_output=True)
+
+        print("loss")
         start = time.time()
         l_r = 0
         loss = 0
         if not epoch % self.cfg.training.rec_epochs:
             # self.switch_grads(mode='rec')
-            l_r = rec_loss(steps=self.cfg.model.steps,
+            l_r = rec_loss(steps=self.cfg.model.num_layers,
                            ee=out_pos['e_ind'],
                            spotlights=out_pos['merge_info']['spotlights'],
                            batch=batch.batch,
@@ -116,7 +118,7 @@ class MotifTrainer(pl.LightningModule):
             l_m = freq_loss(out_pos['internals'],
                             out_neg['internals'],
                             out_pos['e_prob'],
-                            steps=self.cfg.model.steps,
+                            steps=self.cfg.model.num_layers,
                             beta=self.cfg.training.beta,
                             lam=self.cfg.training.lam_sigma,
                             estimator=self.cfg.training.estimator
@@ -177,6 +179,7 @@ def main(cfg: DictConfig) -> None:
     trainer.fit(model=model, train_dataloaders=data_loader)
 
     save_dir = Path(cfg.paths.log_dir)
+    print(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     net.save(save_dir / "model.pt")
 

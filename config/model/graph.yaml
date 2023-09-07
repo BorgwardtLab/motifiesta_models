@@ -1,6 +1,6 @@
 name: gnn
-num_layers: 5
-embed_dim: 256
+num_layers: 3
+embed_dim: 32 
 gnn_type: gin
 dropout: 0.0
 pooling: mean
