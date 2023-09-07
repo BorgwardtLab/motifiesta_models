@@ -116,7 +116,7 @@ class ProteinStructureNet(nn.Module):
         )
 
     def forward(self, data, other_data=None):
-        x = self.encoder(data)['x']
+        x = self.encoder(data, full_output=False)
         if hasattr(data, 'sub_index'):
             x = x[data.sub_index]
         other_x = other_data
