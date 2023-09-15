@@ -20,12 +20,15 @@ from proteinshake import datasets
 from proteinshake_eval.transforms import get_pretrain_dataset
 from proteinshake_eval.models.protein_model import ProteinStructureEncoder
 from proteinshake_eval.utils import get_cosine_schedule_with_warmup
+from proteinshake_eval.utils import catchtime
+
 from motifiesta.utils import assign_index 
 
 from pretrain_motif import MotifTrainer
 from pretrain_mask_residues import MaskTrainer
 
 import pytorch_lightning as pl
+from loguru import logger
 import logging
 
 
@@ -75,10 +78,12 @@ def main(cfg: DictConfig) -> None:
         callbacks=callbacks
     )
 
-    trainer.fit(model=model, train_dataloaders=data_loader)
+    with catchtime(log, "trainer.fit()"):
+        trainer.fit(model=model, train_dataloaders=data_loader)
 
     save_dir = Path(cfg.paths.log_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Saving model to {save_dir}")
     net.save(save_dir / "model.pt")
 
 if __name__ == "__main__":

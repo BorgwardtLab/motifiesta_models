@@ -22,6 +22,7 @@ from proteinshake import datasets
 from proteinshake_eval.transforms import get_pretrain_dataset
 from proteinshake_eval.models.protein_model import ProteinStructureEncoder
 from proteinshake_eval.utils import get_cosine_schedule_with_warmup
+from proteinshake_eval.utils import catchtime
 
 from motifiesta.transforms import RewireTransform
 from motifiesta.losses import freq_loss
@@ -75,9 +76,8 @@ class MotifTrainer(pl.LightningModule):
 
         """
 
-        print(batch_idx)
-        print("Rewire")
-        rewire_transform = RewireTransform(n_iter=self.cfg.training.rewire_iters)
+        with catchtime(log, "rewire()"):
+            rewire_transform = RewireTransform(n_iter=self.cfg.training.rewire_iters)
 
         start = time.time()
         batch_neg = rewire_transform(batch)
@@ -85,47 +85,43 @@ class MotifTrainer(pl.LightningModule):
         #print("forward")
         start = time.time()
 
-        out_pos = self.model(batch, full_output=True)
+        with catchtime(log, "self.model()"):
+            out_pos = self.model(batch, full_output=True)
 
-        print(f"full forward {time.time() - start}")
-            
         out_neg = self.model(batch_neg, full_output=True)
 
-        print("loss")
         start = time.time()
         l_r = 0
         loss = 0
         if not epoch % self.cfg.training.rec_epochs:
             # self.switch_grads(mode='rec')
-            l_r = rec_loss(steps=self.cfg.model.num_layers,
-                           ee=out_pos['e_ind'],
-                           spotlights=out_pos['merge_info']['spotlights'],
-                           batch=batch.batch,
-                           node_feats=batch.x,
-                           edge_index_base=batch.edge_index,
-                           edge_feats=batch.edge_attr,
-                           internals=out_pos['internals'],
-                           num_nodes=self.cfg.training.rec_samples,
-                           simfunc=self.cfg.training.simfunc,
-                           device=self.device,
-                           do_cache=True
-                           )
+            with catchtime(log, "rec_loss()"):
+                l_r = rec_loss(steps=self.cfg.model.num_layers,
+                               ee=out_pos['e_ind'],
+                               spotlights=out_pos['merge_info']['spotlights'],
+                               batch=batch.batch,
+                               node_feats=batch.x,
+                               edge_index_base=batch.edge_index,
+                               edge_feats=batch.edge_attr,
+                               internals=out_pos['internals'],
+                               num_nodes=self.cfg.training.rec_samples,
+                               simfunc=self.cfg.training.simfunc,
+                               device=self.device,
+                               do_cache=True
+                               )
             loss += l_r
 
         if True: 
             # self.switch_grads(mode='freq')
-            start = time.time()
-            l_m = freq_loss(out_pos['internals'],
-                            out_neg['internals'],
-                            out_pos['e_prob'],
-                            steps=self.cfg.model.num_layers,
-                            beta=self.cfg.training.beta,
-                            lam=self.cfg.training.lam_sigma,
-                            estimator=self.cfg.training.estimator
-                            )
-            freq_time = time.time() - start
-            loss += l_m
-        # print(f"forward time: {forward_time}, rec_time: {rec_time}, freq time: {freq_time}")
+            with catchtime(log, "freq_loss()"):
+                l_m = freq_loss(out_pos['internals'],
+                                out_neg['internals'],
+                                out_pos['e_prob'],
+                                steps=self.cfg.model.num_layers,
+                                beta=self.cfg.training.beta,
+                                lam=self.cfg.training.lam_sigma,
+                                estimator=self.cfg.training.estimator
+                                )
         return loss
 
     def configure_optimizers(self):
@@ -165,12 +161,13 @@ def main(cfg: DictConfig) -> None:
     ]
 
     limit_train_batches = 5 if cfg.training.debug else None
+    accelerator = 'cpu' if cfg.training.debug else 'auto'
 
     trainer = pl.Trainer(
         limit_train_batches=limit_train_batches,
         max_epochs=cfg.training.epochs,
-        # devices='auto',
-        accelerator='mps',
+        accelerator=accelerator,
+        devices='auto',
         enable_checkpointing=False,
         logger=[logger],
         callbacks=callbacks
@@ -179,7 +176,6 @@ def main(cfg: DictConfig) -> None:
     trainer.fit(model=model, train_dataloaders=data_loader)
 
     save_dir = Path(cfg.paths.log_dir)
-    print(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     net.save(save_dir / "model.pt")
 

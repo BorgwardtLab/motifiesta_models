@@ -1,3 +1,4 @@
+from time import perf_counter
 import math
 import torch
 from torch_geometric.data import Data
@@ -8,6 +9,22 @@ import importlib
 from torch.utils.data import Subset
 from torch_geometric.loader import DataLoader
 
+
+
+class catchtime:
+    # from https://stackoverflow.com/questions/33987060/python-context-manager-that-measures-time
+    def __init__(self, logger, prefix=""):
+        self.logger = logger
+        self.prefix = prefix
+
+    def __enter__(self):
+        self.start = perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.time = perf_counter() - self.start
+        self.readout = f'Time {self.prefix}: {self.time:.3f} seconds'
+        self.logger.debug(self.readout)
 
 def get_task(task_name):
     all_task_classes = importlib.import_module('proteinshake.tasks')
