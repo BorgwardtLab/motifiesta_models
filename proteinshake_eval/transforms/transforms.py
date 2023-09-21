@@ -6,6 +6,7 @@ from proteinshake.transforms import Compose
 from .graph import GraphPretrainTransform, MaskNode
 from .point2 import PointPretrainTransform, MaskPoint
 from .voxel import VoxelPretrainTransform
+from .graph import GraphLineTransform
 
 
 def get_transformed_dataset(cfg, dataset, task, y_transform=None):
@@ -48,7 +49,7 @@ def get_pretrain_dataset(cfg, dataset):
                 GraphPretrainTransform(), ProteinEdgeTypeTransform(), MaskNode(20, mask_rate=cfg.representation.mask_rate)
             ])
         if cfg.training.strategy == 'motif':
-            data_transform = Compose([GraphPretrainTransform(), ProteinEdgeTypeTransform()])
+            data_transform = Compose([GraphPretrainTransform(), ProteinEdgeTypeTransform(), GraphLineTransform()])
 
         return dataset.to_graph(eps=cfg.representation.graph_eps).pyg(transform=data_transform)
     else:

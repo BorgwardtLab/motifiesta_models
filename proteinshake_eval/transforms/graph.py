@@ -1,6 +1,8 @@
 import math
 import torch
 from torch_geometric.data import Data
+from loguru import logger
+from torch_geometric.transforms import LineGraph
 from .utils import reshape_data, add_other_data
 
 
@@ -87,3 +89,18 @@ class ProteinEdgeTypeTransform(object):
         return new_data
     pass
 
+class GraphLineTransform(object):
+    def __init__(self, merge_method='cat'):
+        self.merge_method = merge_method
+
+    def __call__(self, data):
+        new_data = Data()
+        new_data.x = data.x
+        new_data.edge_index = data.edge_index
+        new_data.edge_attr = data.edge_attr
+
+        line_graph = LineGraph()(Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr))
+        logger.debug("Making line")
+        new_data.line_x = line_graph.x
+        new_data.line_edge_index = line_graph.edge_index
+        return new_data

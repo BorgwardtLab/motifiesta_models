@@ -16,6 +16,7 @@ import torch.nn.functional as F
 from torch_geometric import utils
 from torch_geometric.loader import DataLoader
 import torch_geometric.transforms as T
+from loguru import logger
 
 from proteinshake import datasets
 
@@ -95,6 +96,7 @@ class MotifTrainer(pl.LightningModule):
         loss = 0
         if not epoch % self.cfg.training.rec_epochs:
             # self.switch_grads(mode='rec')
+            logger.debug(batch.edge_attr)
             with catchtime(log, "rec_loss()"):
                 l_r = rec_loss(steps=self.cfg.model.num_layers,
                                ee=out_pos['e_ind'],
