@@ -129,7 +129,6 @@ class MotifTrainer(pl.LightningModule):
                                 estimator=self.cfg.training.estimator
                                 )
                 loss += l_m
-        print(loss)
         return loss
 
     def configure_optimizers(self):
@@ -148,6 +147,10 @@ def main(cfg: DictConfig) -> None:
     log.info(f"Configs:\n{OmegaConf.to_yaml(cfg)}")
     pl.seed_everything(cfg.seed, workers=True)
 
+    save_dir = Path(cfg.paths.output_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cfg, Path(save_dir, "config.yaml"))
+
     dset = datasets.AlphaFoldDataset(root=cfg.task.path, organism=cfg.task.organism)
     # dset = datasets.RCSBDataset(root=cfg.task.path)
 
@@ -165,7 +168,9 @@ def main(cfg: DictConfig) -> None:
     logger = pl.loggers.CSVLogger(cfg.paths.output_dir, name='csv_logs')
     callbacks = [
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.TQDMProgressBar(refresh_rate=1)
+        pl.callbacks.TQDMProgressBar(refresh_rate=1),
+        pl.callbacks.ModelCheckpoint(dirpath=cfg.paths.output_dir,
+                           every_n_train_steps=100)
     ]
 
     limit_train_batches = 5 if cfg.training.debug else None
@@ -183,9 +188,6 @@ def main(cfg: DictConfig) -> None:
 
     trainer.fit(model=model, train_dataloaders=data_loader)
 
-    save_dir = Path(cfg.paths.log_dir)
-    save_dir.mkdir(parents=True, exist_ok=True)
-    OmegaConf.save(cfg, Path(save_dir, "config.yaml"))
     net.save(save_dir / "model.pt")
 
 

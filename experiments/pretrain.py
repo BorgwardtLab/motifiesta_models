@@ -44,6 +44,9 @@ def main(cfg: DictConfig) -> None:
     print("Converting..")
     dset = get_pretrain_dataset(cfg, dset)
 
+    save_dir = Path(cfg.paths.output_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
     data_loader = DataLoader(
         dset, batch_size=cfg.training.batch_size, shuffle=False,
         num_workers=cfg.training.num_workers,
@@ -62,7 +65,9 @@ def main(cfg: DictConfig) -> None:
     logger = pl.loggers.CSVLogger(cfg.paths.output_dir, name='csv_logs')
     callbacks = [
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.TQDMProgressBar(refresh_rate=1)
+        pl.callbacks.TQDMProgressBar(refresh_rate=1),
+        pl.callbacks.ModelCheckpoint(dirpath=cfg.paths.output_dir,
+                           every_n_train_steps=100)
     ]
 
     limit_train_batches = 5 if cfg.training.debug else None
@@ -72,7 +77,7 @@ def main(cfg: DictConfig) -> None:
         max_epochs=cfg.training.epochs,
         devices='auto',
         accelerator='auto',
-        enable_checkpointing=False,
+        enable_checkpointing=True,
         logger=[logger],
         callbacks=callbacks
     )
@@ -80,8 +85,6 @@ def main(cfg: DictConfig) -> None:
     with catchtime(log, "trainer.fit()"):
         trainer.fit(model=model, train_dataloaders=data_loader)
 
-    save_dir = Path(cfg.paths.log_dir)
-    save_dir.mkdir(parents=True, exist_ok=True)
     OmegaConf.save(cfg, Path(save_dir, "config.yaml"))
     print(f"Saving model to {save_dir}")
     net.save(save_dir / "model.pt")
