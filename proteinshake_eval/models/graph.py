@@ -175,7 +175,6 @@ class GNN_encoder(nn.Module):
     def forward(self, data, full_output=False):
         output = self.encoder(data)
         if self.pooling is not None:
-            print(output['x'].shape, data.batch.shape)
             pooled = self.pooling(output['x'], data.batch)
             output['x'] = pooled
 

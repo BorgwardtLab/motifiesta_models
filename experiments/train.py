@@ -32,9 +32,14 @@ from proteinshake_eval.utils import get_loss
 from proteinshake_eval.metrics import compute_metrics
 from proteinshake_eval.transforms import get_transformed_dataset
 from proteinshake_eval.models.protein_model import ProteinStructureNet
+from motifiesta.utils import catchtime 
+
+import loguru
 
 import pytorch_lightning as pl
 import logging
+
+torch.set_float32_matmul_precision('medium')
 
 log = logging.getLogger(__name__)
 
@@ -65,13 +70,14 @@ class ProteinTaskTrainer(pl.LightningModule):
         return self.y_transform.inverse_transform(y_true), self.y_transform.inverse_transform(y_pred)
 
     def training_step(self, batch, batch_idx):
-        y_hat, y = self.model.step(batch)
-        loss = self.criterion(y_hat, y)
-        if hasattr(self.model.encoder, "regularizer_loss"):
-            reg_loss = self.model.encoder.regularizer_loss()
-            loss = loss + reg_loss
+        with catchtime(loguru.logger, prefix="model train step", level='INFO'):
+            y_hat, y = self.model.step(batch)
+            loss = self.criterion(y_hat, y)
+            if hasattr(self.model.encoder, "regularizer_loss"):
+                reg_loss = self.model.encoder.regularizer_loss()
+                loss = loss + reg_loss
 
-        self.log("train_loss", loss, on_step=False, on_epoch=True, batch_size=1)
+            self.log("train_loss", loss, on_step=False, on_epoch=True, batch_size=1)
 
         return loss
 
@@ -199,12 +205,16 @@ def main(cfg: DictConfig) -> None:
     logger = pl.loggers.CSVLogger(cfg.paths.output_dir, name='csv_logs')
     callbacks = [
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.TQDMProgressBar(refresh_rate=1000)
+        pl.callbacks.TQDMProgressBar(refresh_rate=1)
     ]
 
     limit_train_batches = 5 if cfg.training.debug else None
     limit_val_batches = 5 if cfg.training.debug else None
     accelerator = 'cpu' if cfg.training.debug else 'auto'
+
+    model.train()
+    torch.set_grad_enabled(True)
+
     trainer = pl.Trainer(
         limit_train_batches=limit_train_batches,
         limit_val_batches=limit_val_batches,

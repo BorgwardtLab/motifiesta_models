@@ -90,6 +90,7 @@ class ProteinEdgeTypeTransform(object):
     pass
 
 class GraphLineTransform(object):
+    print("line")
     def __init__(self, merge_method='cat'):
         self.merge_method = merge_method
 
@@ -99,8 +100,12 @@ class GraphLineTransform(object):
         new_data.edge_index = data.edge_index
         new_data.edge_attr = data.edge_attr
 
+        if hasattr(data, 'y'):
+            new_data.y = data.y
+        if hasattr(data, 'residue_idx'):
+            new_data.reisude_idx = data.residue_idx
+
         line_graph = LineGraph()(Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr))
-        logger.debug("Making line")
         new_data.line_x = line_graph.x
         new_data.line_edge_index = line_graph.edge_index
         return new_data

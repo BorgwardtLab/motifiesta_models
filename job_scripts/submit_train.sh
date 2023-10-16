@@ -1,22 +1,22 @@
 #!/bin/bash
-#SBATCH --job-name="proteinshake_eval"
+#SBATCH --job-name="motifiesta_eval"
 #SBATCH --cpus-per-task=5
-#SBATCH --mem-per-cpu=5G
-#SBATCH --gpus-per-node=h100_pcie_2g.20gb:1
-#SBATCH --exclude=hpcl9101
-#SBATCH --time=10:00:00
+#SBATCH --mem-per-cpu=1G
+#SBATCH --gres=gpu:1
 #SBATCH --partition=p.hpcl91
-#SBATCH --output slurm_logs/train_%A_%a.log
-#SBATCH --array=0-3
+#SBATCH --time=01:00:00
+#SBATCH --output slurm_logs/mf_test.o
 
+cd ..
+pwd
 
 hostname; date
 echo $CUDA_VISIBLE_DEVICES
-source ~/.bashrc
-mamba activate shakesat
+source .venv/bin/activate
 
-cd ..
+pwd
 
-python experiments/train.py task=enzyme_class representation=graph task.split=random seed=${SLURM_ARRAY_TASK_ID}
+
+python experiments/train.py task=enzyme_class pretrained_path=logs/pretrain/alphafold/motif/0/model.pt model.name=motif task.split=random training.debug=true
 
 exit 0

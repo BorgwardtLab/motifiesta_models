@@ -50,21 +50,24 @@ class MotifTrainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # print("Getting loss")
         loss = self._shared_eval_step(batch, batch_idx, self.current_epoch)
-
+        self.log("train_loss", loss, on_step=True, on_epoch=True, batch_size=1)
         return loss
 
     def switch_grads(self, mode='rec'):
         for name, param in self.model.named_parameters():
             if mode == 'rec':
-                if 'scorer' in name or 'embed' in name:
+                if '_scorer' in name or 'embed' in name:
                     param.requires_grad = False
-                if 'encoder' in name:
+                if '_encoder' in name:
                     param.requires_grad = True
             if mode == 'freq':
-                if 'scorer' in name or 'embed' in name:
+                if '_scorer' in name or 'embed' in name:
                     param.requires_grad = True
-                if 'encoder' in name:
+                if '_encoder' in name:
                     param.requires_grad = False
+
+        #for name, param in self.model.named_parameters():
+        #    print(f"{name} {param.requires_grad}")
 
     def _shared_eval_step(self, batch, batch_idx, epoch):
         """
@@ -92,11 +95,11 @@ class MotifTrainer(pl.LightningModule):
         out_neg = self.model(batch_neg, full_output=True)
 
         start = time.time()
-        l_r = 0
         loss = 0
-        if not epoch % self.cfg.training.rec_epochs:
-            # self.switch_grads(mode='rec')
-            logger.debug(batch.edge_attr)
+        # if not epoch % self.cfg.training.rec_epochs:
+        if not epoch % 2:
+            self.switch_grads(mode='rec')
+            print("rec batch") 
             with catchtime(log, "rec_loss()"):
                 l_r = rec_loss(steps=self.cfg.model.num_layers,
                                ee=out_pos['e_ind'],
@@ -106,15 +109,16 @@ class MotifTrainer(pl.LightningModule):
                                edge_index_base=batch.edge_index,
                                edge_feats=batch.edge_attr,
                                internals=out_pos['internals'],
-                               num_nodes=self.cfg.training.rec_samples,
+                               num_samples=self.cfg.training.rec_samples,
                                simfunc=self.cfg.training.simfunc,
                                device=self.device,
                                do_cache=True
                                )
             loss += l_r
 
-        if True: 
-            # self.switch_grads(mode='freq')
+        else: 
+            print("freq batch") 
+            self.switch_grads(mode='freq')
             with catchtime(log, "freq_loss()"):
                 l_m = freq_loss(out_pos['internals'],
                                 out_neg['internals'],
@@ -124,6 +128,8 @@ class MotifTrainer(pl.LightningModule):
                                 lam=self.cfg.training.lam_sigma,
                                 estimator=self.cfg.training.estimator
                                 )
+                loss += l_m
+        print(loss)
         return loss
 
     def configure_optimizers(self):
@@ -142,8 +148,8 @@ def main(cfg: DictConfig) -> None:
     log.info(f"Configs:\n{OmegaConf.to_yaml(cfg)}")
     pl.seed_everything(cfg.seed, workers=True)
 
-    # dset = datasets.AlphaFoldDataset(root=cfg.task.path, organism=cfg.task.organism)
-    dset = datasets.RCSBDataset(root=cfg.task.path)
+    dset = datasets.AlphaFoldDataset(root=cfg.task.path, organism=cfg.task.organism)
+    # dset = datasets.RCSBDataset(root=cfg.task.path)
 
     dset = get_pretrain_dataset(cfg, dset)
 
@@ -159,7 +165,7 @@ def main(cfg: DictConfig) -> None:
     logger = pl.loggers.CSVLogger(cfg.paths.output_dir, name='csv_logs')
     callbacks = [
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.TQDMProgressBar(refresh_rate=1000)
+        pl.callbacks.TQDMProgressBar(refresh_rate=1)
     ]
 
     limit_train_batches = 5 if cfg.training.debug else None
@@ -179,6 +185,7 @@ def main(cfg: DictConfig) -> None:
 
     save_dir = Path(cfg.paths.log_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cfg, Path(save_dir, "config.yaml"))
     net.save(save_dir / "model.pt")
 
 

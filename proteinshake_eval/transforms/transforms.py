@@ -10,6 +10,7 @@ from .graph import GraphLineTransform
 
 
 def get_transformed_dataset(cfg, dataset, task, y_transform=None):
+    print("Train Transforms")
     if 'pair' in task.task_type[0]:
         if cfg.name == 'graph':
             data_transform = GraphPairTrainTransform()
@@ -30,7 +31,11 @@ def get_transformed_dataset(cfg, dataset, task, y_transform=None):
         return train_dset, val_dset, test_dset
 
     if cfg.name == 'graph':
-        data_transform = GraphTrainTransform(task, y_transform)
+        if cfg.line_graph:
+            data_transform = Compose([GraphTrainTransform(task, y_transform),
+                                      GraphLineTransform()])
+        else:
+            data_transform = GraphTrainTransform(task, y_transform)
         return dataset.to_graph(eps=cfg.graph_eps).pyg(transform=data_transform)
     elif cfg.name == 'point_cloud':
         data_transform = PointTrainTransform(task, y_transform)
